@@ -66,7 +66,7 @@ func run() error {
 	c := 0
 	for k, v := range opt.Main {
 		// log.Printf("adding main stat %v: %v\n", k, v)
-		i := lib.StrToSlotType(k)
+		i := lib.StrToSlotType(k) //should add a way for main stat to be anything
 		if i == -1 {
 			return fmt.Errorf("unrecognized artifact slot: %v", k)
 		}
@@ -161,7 +161,7 @@ func sim(n, w int, main [][lib.EndSlotType]lib.StatType, desired [][lib.EndStatT
 	req := make(chan struct{})
 	done := make(chan struct{})
 	for i := 0; i < int(w); i++ {
-		m := cloneMain(main)
+		m := cloneMain(main)//oh no i probably have to clone set and maxdomain dont i :(
 		d := cloneDesired(desired)
 		go worker(m, d, req, resp, done)
 	}
@@ -234,7 +234,7 @@ func worker(main [][lib.EndSlotType]lib.StatType, desired [][lib.EndStatType]flo
 	for {
 		select {
 		case <-req:
-			count, err := gen.FarmArtifact(main, desired)
+			count, err := gen.FarmArtifact(main, desired, set, maxdomain)
 			resp <- result{
 				count: count,
 				err:   err,
