@@ -264,33 +264,41 @@ NEXT:
 		for _, c := range onmin {
 			updateRPDC := false; //optimially this is just a function but that initialization line would be so long
 			ison := false; //lets us check less combinations
-			
+			newloc :=-1;
 			
 			if(!done[c]) {
 				score := calcScore(a, c, main, desired)
 				if isOnpiece(a, set) {
 					if score > onmin[c][typetonum(a.SlotType)] {
-						onpieces[c][typetonum(a.SlotType)][onloc[c][typetonum(a.SlotType)]] = a
-						onmap[c][typetonum(a.SlotType)][onloc[c][typetonum(a.SlotType)]] = score
-						onmin[c][typetonum(a.SlotType)], onloc[c][typetonum(a.SlotType)]] = calcMin(c, typetonum(a.SlotType), onmap)
+						newloc = onloc[c][typetonum(a.SlotType)]
+						onpieces[c][typetonum(a.SlotType)][newloc] = a
+						onmap[c][typetonum(a.SlotType)][newloc] = score
+						onmin[c][typetonum(a.SlotType)], onloc[c][typetonum(a.SlotType)] = calcMin(c, typetonum(a.SlotType), onmap)
 						updateRPDC = true;
 						ison = true;
 					}
 				} else {
 					if score > offmin[c][typetonum(a.SlotType)] {
-						offpieces[c][typetonum(a.SlotType)][offloc[c][typetonum(a.SlotType)]] = a
-						offmap[c][typetonum(a.SlotType)][offloc[c][typetonum(a.SlotType)]] = score
-						offmin[c][typetonum(a.SlotType)], offloc[c][typetonum(a.SlotType)]] = calcMin(c, typetonum(a.SlotType), offmap)
+						newloc = offloc[c][typetonum(a.SlotType)]
+						offpieces[c][typetonum(a.SlotType)][newloc] = a
+						offmap[c][typetonum(a.SlotType)][newloc] = score
+						offmin[c][typetonum(a.SlotType)], offloc[c][typetonum(a.SlotType)] = calcMin(c, typetonum(a.SlotType), offmap)
 						updateRPDC = true;
 					}
 				}
 			}
 			
 			if(updateRPDC) {
-				
-				
-				
-				curdom = findcurdom(rollsperdomain, rpdc);
+				//basically:
+				//-go thru all valid combinations (correct sets etc) from this char's onpieces and offpieces that involve the new artifact
+				//-score each combination: foreachdesiredstat(score+= min(rolls of this stat with this combination, desired rolls of this stat))
+				//-keep track of the combination with the highest score
+				//-if a combination is found where score = ttl desired stat rolls (ie we found a set that works), change done[c] to true and exit loop (when done is changed to true, maybe these artifacts should be deleted, so that no other chars can use them, idk)
+				//-once all combinations are searched, recalculate rpdcpc[c]
+				//	-if the char uses 4pc set (or if two 2pc from same domain), this is simply done by rpdcpc[c][domainwiththatset] = score
+				//  -if the char uses 2 (or 1&rainbow) 2pc sets, this is done by rpdcpc[c][domainwitha2pcset] = min(ttl desired rolls for this char/2, the score recalcuated from the winning combination but using only artifacts from this set)
+				//recalculate rpdc which is just the sum of rpdcpc
+				//recalculate curdom, which is the domain d where rollsperdomain[d]-rpdc[d] is the highest
 			}
 		}
 		
@@ -300,7 +308,7 @@ NEXT:
 		return -1, errors.New("maximum tries exceeded; requirement not met")
 	}
 	
-	//once we're here we have all artifacts for ppl who need certain sets, farm more here if theres a char that can use full rainbow (2pc + rainbow should also already be complete)
+	//once we're here we have all artifacts for ppl who need certain sets, farm more here if theres a char that can use full rainbow (2pc + rainbow should also already be complete.. actually no i think there's cases where it wouldn't be)
 	
 	return count,nil;
 }
