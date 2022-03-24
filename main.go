@@ -40,6 +40,15 @@ func run() error {
 	var err error
 	var opt config
 	source, err = ioutil.ReadFile("./config.json")
+	//keep := 5; the number of on and off pieces to store for optimizing per slot per char
+	//onpieces := [4][5][keep]Artifact; //first [] is which char, second is what type it is, third is which of the 5 stored artis it is
+	//offpieces := [4][5][keep]Artifact;
+	//onmin := [4][5]int; //first [] is which char, second is is what type. stores the score the arti that is most replacable.
+	//onmap := [4][5]int; //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
+	//offmin := [4][5]int; //first [] is which char, second is is what type. stores the score the arti that is most replacable.
+	//offmap := [4][5]int; //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
+	
+	//bag := make([]Artifact, EndSlotType)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -48,10 +57,13 @@ func run() error {
 		return err
 	}
 
-	var main [5]lib.StatType
-	var desired [lib.EndStatType]float64
+	var main [4][5]lib.StatType
+	var desired [4][lib.EndStatType]float64
+	var set [4][2]int //0 = any set
+	var maxdomain = -1
 
 	//parse config
+	c := 0
 	for k, v := range opt.Main {
 		// log.Printf("adding main stat %v: %v\n", k, v)
 		i := lib.StrToSlotType(k)
@@ -62,23 +74,40 @@ func run() error {
 		if s == -1 {
 			return fmt.Errorf("unrecognized main stat for %v: %v", k, v)
 		}
-		main[i] = s
+		main[c][i] = s
+		if lib.StrToSlotType(k) == "Circlet" {
+			c = c+1
+		}
 	}
-
+	c=0
+	c2 := 0
 	for k, v := range opt.Subs {
-		// log.Printf("adding desired stat %v: %v\n", k, v)
-		s := lib.StrToStatType(k)
-		if s == -1 {
-			return fmt.Errorf("unrecognized sub stat : %v", k)
+	
+		if c >= 4 {
+			set[c2/2][c2%2] = v
+			if v > maxdomain {
+				maxdomain = v
+			}
+			c2 = c2+1
+		} else {
+			// log.Printf("adding desired stat %v: %v\n", k, v)
+			s := lib.StrToStatType(k)
+			if s == -1 {
+				//return fmt.Errorf("unrecognized sub stat : %v", k)
+				c=c+1
+				s=0
+			}
 		}
 		if v < 0 {
 			return fmt.Errorf("sub stat %v cannot be negative : %v", k, v)
 		}
-		desired[s] = v
+		if c < 4 {
+			desired[c][s] = v
+		}
 	}
 
 	//sanity check
-	ok := false
+	/*ok := false
 	for _, v := range desired {
 		if v > 0 {
 			ok = true
@@ -87,7 +116,7 @@ func run() error {
 
 	if !ok {
 		return fmt.Errorf("desired_subs cannot all be 0")
-	}
+	}*/
 
 	if opt.Workers == 0 {
 		opt.Workers = runtime.NumCPU()
@@ -99,7 +128,7 @@ func run() error {
 
 	defer elapsed(fmt.Sprintf("simulation complete; %v iterations", opt.Iterations))()
 
-	min, max, mean, sd, err := sim(opt.Iterations, opt.Workers, main, desired)
+	min, max, mean, sd, err := sim(opt.Iterations, opt.Workers, main, desired, set, maxdomain)
 	if err != nil {
 		return err
 	}
@@ -120,7 +149,7 @@ type result struct {
 	err   error
 }
 
-func sim(n, w int, main [lib.EndSlotType]lib.StatType, desired [lib.EndStatType]float64) (min, max int, mean, sd float64, err error) {
+func sim(n, w int, main [][lib.EndSlotType]lib.StatType, desired [][lib.EndStatType]float64, set [][]int, maxdomain int ) (min, max int, mean, sd float64, err error) {
 	var progress, ss float64
 	var sum int
 	var data []int
@@ -198,7 +227,7 @@ func cloneMain(in [lib.EndSlotType]lib.StatType) (r [lib.EndSlotType]lib.StatTyp
 	return
 }
 
-func worker(main [lib.EndSlotType]lib.StatType, desired [lib.EndStatType]float64, req chan struct{}, resp chan result, done chan struct{}) {
+func worker(main [][lib.EndSlotType]lib.StatType, desired [][lib.EndStatType]float64, set [][]int, maxdomain int, req chan struct{}, resp chan result, done chan struct{}) {
 	seed := time.Now().UnixNano()
 	r := rand.New(rand.NewSource(seed))
 	gen := lib.NewGenerator(r)

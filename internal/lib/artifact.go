@@ -181,6 +181,14 @@ func PrintSubs(in [][]float64) {
 	}
 }
 
+/*type Set struct {
+	Flower Artifact
+	Feather Artifact
+	Sands Artifact
+	Goblet Artifact
+	Circlet Artifact
+}*/
+
 type Artifact struct {
 	Slot SlotType
 	Main StatType
@@ -197,7 +205,14 @@ func (g *Generator) FarmArtifact(main [EndSlotType]StatType, desired [EndStatTyp
 	var req, score float64
 	var done bool
 	count := 0
-	bag := make([]Artifact, EndSlotType)
+	//bag := make([]Artifact, EndSlotType)
+	keep := 5; the number of on and off pieces to store for optimizing per slot per char
+	onpieces := [4][5][keep]Artifact; //first [] is which char, second is what type it is, third is which of the 5 stored artis it is
+	offpieces := [4][5][keep]Artifact;
+	onmin := [4][5]int; //first [] is which char, second is is what type. stores the score the arti that is most replacable.
+	onmap := [4][5]int; //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
+	offmin := [4][5]int; //first [] is which char, second is is what type. stores the score the arti that is most replacable.
+	offmap := [4][5]int; //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
 
 	for _, v := range desired {
 		if v > 0 {
