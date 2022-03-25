@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+
+	//"go/constant"
 	"io/ioutil"
 	"log"
 	"math"
@@ -12,8 +14,11 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/kurt22i/artfarm/internal/lib"
+	"github.com/genshinsim/artfarm/internal/lib"
+	//"github.com/kurt22i/artfarm/internal/lib"
 )
+
+const numsubs = 10
 
 type config struct {
 	Main       map[string]string  `json:"main_stat"`
@@ -50,7 +55,7 @@ func run() error {
 	}
 
 	var main [4][5]lib.StatType
-	var desired [4][lib.EndStatType]float64
+	var desired [4][numsubs]float64
 	var set [4][2]int //0 = any set
 	var maxdomain = -1
 
@@ -74,11 +79,11 @@ func run() error {
 	c = 0
 	c2 := 0
 	for k, v := range opt.Subs {
-
+		s := -299
 		if c >= 4 {
-			set[c2/2][c2%2] = v
-			if v > maxdomain {
-				maxdomain = v
+			set[c2/2][c2%2] = int(v)
+			if int(v) > maxdomain {
+				maxdomain = int(v)
 			}
 			c2 = c2 + 1
 		} else {
@@ -141,7 +146,7 @@ type result struct {
 	err   error
 }
 
-func sim(n, w int, main [][lib.EndSlotType]lib.StatType, desired [][lib.EndStatType]float64, set [][]int, maxdomain int) (min, max int, mean, sd float64, err error) {
+func sim(n, w int, main [4][lib.EndSlotType]lib.StatType, desired [4][numsubs]float64, set [4][2]int, maxdomain int) (min, max int, mean, sd float64, err error) {
 	var progress, ss float64
 	var sum int
 	var data []int
@@ -206,28 +211,28 @@ func sim(n, w int, main [][lib.EndSlotType]lib.StatType, desired [][lib.EndStatT
 	return
 }
 
-func cloneDesired(in [lib.EndStatType]float64) (r [lib.EndStatType]float64) {
+func cloneDesired(in [4][numsubs]float64) (r [4][numsubs]float64) {
 	for i, v := range in {
 		r[i] = v
 	}
 	return
 }
 
-func cloneMain(in [lib.EndSlotType]lib.StatType) (r [lib.EndSlotType]lib.StatType) {
+func cloneMain(in [4][lib.EndSlotType]lib.StatType) (r [4][lib.EndSlotType]lib.StatType) {
 	for i, v := range in {
 		r[i] = v
 	}
 	return
 }
 
-func cloneSet(in [][]int) (r [][]int) {
+func cloneSet(in [4][2]int) (r [4][2]int) {
 	for i, v := range in {
 		r[i] = v
 	}
 	return
 }
 
-func worker(main [][lib.EndSlotType]lib.StatType, desired [][lib.EndStatType]float64, set [][]int, maxdomain int, req chan struct{}, resp chan result, done chan struct{}) {
+func worker(main [4][lib.EndSlotType]lib.StatType, desired [4][numsubs]float64, set [4][2]int, maxdomain int, req chan struct{}, resp chan result, done chan struct{}) {
 	seed := time.Now().UnixNano()
 	r := rand.New(rand.NewSource(seed))
 	gen := lib.NewGenerator(r)
