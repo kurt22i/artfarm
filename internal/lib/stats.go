@@ -60,6 +60,19 @@ var SubTier = [][]float64{
 	{0.0544, 0.0622, 0.0699, 0.0777}, //cd
 }
 
+var SubAvg = []float64{
+	0.062,  //def%
+	19.68,  //def
+	253.94, //hp
+	0.0496, //hp%
+	16.54,  //atk
+	0.0496, //atk%
+	0.0551, //er
+	19.82,  //em
+	0.0331, //cr
+	0.0662, //cd
+}
+
 var StatTypeString = [...]string{
 	"def%",
 	"def",

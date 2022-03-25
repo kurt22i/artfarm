@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"log"
 	"math/rand"
 	"testing"
 	"time"
@@ -15,8 +14,8 @@ func TestGenerator_RandSubs(t *testing.T) {
 }
 
 func TestGenerator_FarmArtifact(t *testing.T) {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	g := NewGenerator(r)
+	//r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	//g := NewGenerator(r)
 	var main [5]StatType
 	main[Feather] = ATK
 	main[Flower] = HP
@@ -25,11 +24,11 @@ func TestGenerator_FarmArtifact(t *testing.T) {
 	main[Circlet] = CR
 	var desired [EndStatType]float64
 	desired[CR] = 0.2
-	count, err := g.FarmArtifact(main, desired)
+	/*count, err := g.FarmArtifact(main, desired)
 	if err != nil {
 		t.Error(err)
 	}
-	log.Println(count)
+	log.Println(count)*/
 }
 
 var result [][]float64

@@ -199,32 +199,32 @@ func (g *Generator) FarmArtifact(main [][lib.EndSlotType]lib.StatType, desired [
 	const keep = 5                    //the number of on and off pieces to store for optimizing per slot per char (should rly be dynamic)
 	var onpieces [4][5][keep]Artifact //first [] is which char, second is what type it is, third is which of the 5 stored artis it is
 	var offpieces [4][5][keep]Artifact
-	var onmin [4][5]float64                         //first [] is which char, second is is what type. stores the score the arti that is most replacable.
-	var onloc [4][5]int                             //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
-	var onmap [4][5][keep]float64                   //stores the score of all the pieces
-	var offmin [4][5]float64                        //first [] is which char, second is is what type. stores the score the arti that is most replacable.
-	var offloc [4][5]int                            //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
-	var offmap [4][5][keep]float64                  //stores the score of all the pieces
-	var rollsperdomain [(maxdomain + 1) / 2]float64 //what we need
-	var rpdc [(maxdomain + 1) / 2]float64           //what we have
-	var rpdcpc [4][(maxdomain + 1) / 2]float64      //rpdc per char
-	var desrolls [4][lib.EndStatType]float64        //desired standardized rolls
-	var ttldr [4]float64                            //total desired rolls for each char
-	var done [4]bool                                //whether or not each char is done
+	var onmin [4][5]float64                               //first [] is which char, second is is what type. stores the score the arti that is most replacable.
+	var onloc [4][5]int                                   //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
+	var onmap [4][5][keep]float64                         //stores the score of all the pieces
+	var offmin [4][5]float64                              //first [] is which char, second is is what type. stores the score the arti that is most replacable.
+	var offloc [4][5]int                                  //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
+	var offmap [4][5][keep]float64                        //stores the score of all the pieces
+	var rollsperdomain = make([]float64, (maxdomain+1)/2) //what we need
+	var rpdc = make([]float64, (maxdomain+1)/2)           //what we have
+	var rpdcpc = make([][]float64, (maxdomain+1)/2)       //rpdc per char
+	var desrolls [4][lib.EndStatType]float64              //desired standardized rolls
+	var ttldr [4]float64                                  //total desired rolls for each char
+	var done [4]bool                                      //whether or not each char is done
 
-	for _, c := range set {
+	for c := 0; c < 4; c++ {
 		for _, p := range set[0] {
-			rolls := 0
-			for _, s := range desired[c] {
-				rolls += Standardize(desired[c][s]) / 2
-				desrolls[c][s] += Standardize(desired[c][s]) / 2
-				ttldr[c] += Standardize(desired[c][s]) / 2
+			rolls := 0.0
+			for s, t := range desired[c] {
+				rolls += Standardize(t, s) / 2
+				desrolls[c][s] += Standardize(t, s) / 2
+				ttldr[c] += Standardize(t, s) / 2
 			}
 			rollsperdomain[(p-1)/2] += rolls
 		}
 	}
 
-	curdom := getDomain(rollsperdomain, rpdc) //location of the max value of rollsperdomain
+	var curdom int = getDomain(rollsperdomain, rpdc) //location of the max value of rollsperdomain
 
 	for count < maxTries && curdom != -999 {
 		count++
@@ -244,15 +244,15 @@ func (g *Generator) FarmArtifact(main [][lib.EndSlotType]lib.StatType, desired [
 		//onpieces, offpieces, onmin, onmap, offmin, offmap, rpdc, curdom = update(onpieces, offpieces, onmin, onmap, offmin, offmap, rpdc, a, main, desired)
 
 		//uh just pretend this is a function
-		for _, c := range onmin {
+		for c := 0; c < 4; c++ {
 			updateRPDC := false //optimially this is just a function but that initialization line would be so long
 			ison := false       //lets us check less combinations
 			newloc := -1
-			aslot := typetonum(a.SlotType)
+			aslot := a.Slot
 
 			if !done[c] {
-				score := calcScore(a, c, main, desired)
-				if isOnpiece(a, set) {
+				score := calcScore(a, c, main, desrolls, ttldr)
+				if a.Set == set[c][0] || a.Set == set[c][1] {
 					if score > onmin[c][aslot] {
 						newloc = onloc[c][aslot]
 						onpieces[c][aslot][newloc] = a
@@ -493,18 +493,19 @@ func (g *Generator) FarmArtifact(main [][lib.EndSlotType]lib.StatType, desired [
 	return count, nil
 }
 
-func calcScore() {
-	if main[c][typetonum(a.SlotType)] != a.StatType {
+func calcScore(a Artifact, c int, main [][EndSlotType]StatType, desrolls [4][EndStatType]float64, ttldr [4]float64) float64 {
+	if main[c][a.Slot] != a.Main {
 		return -1
 	}
 
-	score := 0
-	for _, s := range desired[c] {
-		score += Standardize() * Standardize(desired[c][s]) //formula: #rolls of this stat on this arti * desired #rolls of this stat / ttl #desired rolls of all stats for this char. also standardizing it each time is probably a big ~~dps~~ speed loss so these should probably be stored
+	score := 0.0
+	for s, t := range desrolls[c] {
+		score += Standardize(a.Subs[s], s) * t / ttldr[c] //formula: #rolls of this stat on this arti * desired #rolls of this stat / ttl #desired rolls of all stats for this char. also standardizing it each time is probably a big ~~dps~~ speed loss so these should probably be stored
 	}
+	return score
 }
 
-func getDomain(rpd []float64, rpdc []float64) float64 {
+func getDomain(rpd []float64, rpdc []float64) int {
 	max := 0
 	dom := -999
 	for _, a := range rpd {
@@ -523,7 +524,7 @@ func scoreCombo(combo []Artifact, desrolls [4][lib.EndStatType]float64, set [][]
 			score += Math.min(desrolls[c][s], Standardize(combo[0].Subs[s]+combo[1].Subs[s]+combo[2].Subs[s]+combo[3].Subs[s]+combo[4].Subs[s], s))
 		} else if desrolls[c][s] > 0 {
 			setscore := 0.0
-			for _, a := range combo {
+			for a := 0; a < 5; a++ {
 				if combo[a].Set == set[c][selset] {
 					setscore += combo[a].Subs[s]
 				}
@@ -532,4 +533,8 @@ func scoreCombo(combo []Artifact, desrolls [4][lib.EndStatType]float64, set [][]
 		}
 	}
 	return score
+}
+
+func Standardize(roll float64, stat int) float64 {
+	return roll / SubAvg[stat]
 }
