@@ -210,6 +210,7 @@ func (g *Generator) FarmArtifact(main [][lib.EndSlotType]lib.StatType, desired [
 	rpdc := [(maxdomain+1)/2]float64 //what we have
 	rpdcpc := [4][(maxdomain+1)/2]float64 //rpdc per char
 	desrolls := [4][lib.EndStatType]float64 //desired standardized rolls
+	ttldr := [4]float64 //total desired rolls for each char
 	done := [4]bool //whether or not each char is done
 
 	for _, c := range set {
@@ -217,13 +218,14 @@ func (g *Generator) FarmArtifact(main [][lib.EndSlotType]lib.StatType, desired [
 			rolls := 0
 			for _, s := range desired[c] {
 				rolls += Standardize(desired[c][s])/2
-				desrolls[c][s] += Standardize(desired[c][s])
+				desrolls[c][s] += Standardize(desired[c][s])/2
+				ttldr[c] += Standardize(desired[c][s])/2
 			}
 			rollsperdomain[(p-1)/2] += rolls
 		}
 	}
 	
-	curdom := getDomain(rollsperdomain,rpdc); //location of the max value of rollsperdomain (ineedtoimplementthis)
+	curdom := getDomain(rollsperdomain,rpdc); //location of the max value of rollsperdomain
 
 	for count < maxTries && curdom!=-999 {
 		count++
@@ -283,15 +285,16 @@ func (g *Generator) FarmArtifact(main [][lib.EndSlotType]lib.StatType, desired [
 				//-if a combination is found where score = ttl desired stat rolls (ie we found a set that works), change done[c] to true and exit loop (when done is changed to true, maybe these artifacts should be deleted, so that no other chars can use them, idk)
 				//-once all combinations are searched, recalculate rpdcpc[c]
 				//	-if the char uses 4pc set (or if two 2pc from same domain), this is simply done by rpdcpc[c][domainwiththatset] = score
-				//  -if the char uses 2 (or 1&rainbow) 2pc sets, this is done by rpdcpc[c][domainwitha2pcset] = min(ttl desired rolls for this char/2 - 0.001, the score recalcuated from the winning combination but using only artifacts from this set)
+				//  -if the char uses 2 (or 1&rainbow) 2pc sets, this is done by rpdcpc[c][domainwitha2pcset] = min(ttl desired rolls for this char/2 - 0.001, the score recalcuated from the winning combination but using only artifacts from this set) + 0.001 if done
 				//recalculate rpdc which is just the sum of rpdcpc
 				//recalculate curdom, which is the domain d where rollsperdomain[d]-rpdc[d] is the highest (when this is 0, set curdom to -999)
 				
 				maxcombo := [5]Artifact
 				maxscore := 0
+				combo := [5]Artifact
+				combo[aslot] = a
+				
 				if ison {
-					combo := [5]Artifact
-					combo[aslot] = a
 					//1 off, 4 on.. ugh this doesnt support rainbow ;-; halp
 					for _, i := range offpieces[c] {
 						if i == a.SlotType { //dont check offpieces that are the same slot as our new onpiece
@@ -351,10 +354,131 @@ func (g *Generator) FarmArtifact(main [][lib.EndSlotType]lib.StatType, desired [
 					
 					
 					
+					
+					
+					
 					//5 on
+					for _, i := range onpieces[c] {
+						if i == a.SlotType { //dont check onpieces that are the same slot as our new onpiece
+							continue
+						}
+						for _, j := range onpieces[c][i] { //ok now this is lazy code because i only really needed this loop to go here for offpieces but its easier than restructuring the whole thing so
+							combo[i] = onpieces[c][i][j]
+							for k := 0; k<4; k++ { //slot of arti3... hm maybe should have array or something that takes 2 slots and returns the 3 other ones lol
+								if k==i || k==aslot { //cant be same slot as existing artis
+									continue
+								}
+								for l := k+1; l<4; l++ { //slot of arti4
+									if l==i || l==aslot { //cant be same slot as existing artis
+										continue
+									}
+									for m := l+1; m<4; m++ { //slot of arti5
+										if m==i || m==aslot { //cant be same slot as existing artis
+											continue
+										}
+										for _, n := range onpieces[c][k] { //each onpiece in slot k
+											for _, o := range onpieces[c][l] { //each onpiece in slot l
+												for _, p := range onpieces[c][m] { //each onpiece in slot m
+													setcount := [maxdomain+1]int;
+													setcount[a.Set]++;
+													setcount[onpieces[c][i][j].Set]++;
+													setcount[onpieces[c][k][n].Set]++;
+													setcount[onpieces[c][l][o].Set]++;
+													setcount[onpieces[c][m][p].Set]++;
+													valid := true
+													if set[c][0] != set[c][1] {
+														if(setcount[set[c][0]]<2 || setcount[set[c][1]]<2) {
+															valid=false;
+														}
+													}
+													if valid {
+														combo[l]=onpieces[c][l][o]
+														combo[k]=onpieces[c][k][n]
+														combo[m]=onpieces[c][m][p]
+														cscore := scoreCombo(combo, desrolls, set)
+														if(cscore > maxscore) {
+															maxscore = cscore;
+															maxcombo = combo;
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+					
+				} else { //new artifact is offpiece. so, only need to search with this + 4 onpieces.
+					for _, i := range onpieces[c] {
+						if i == a.SlotType { //dont check onpieces that are the same slot as our new offpiece
+							continue
+						}
+						for _, j := range onpieces[c][i] { //ok now this is lazy code because i only really needed this loop to go here for... uh idk im confused too at this point
+							combo[i] = onpieces[c][i][j]
+							for k := 0; k<4; k++ { //slot of arti3... hm maybe should have array or something that takes 2 slots and returns the 3 other ones lol
+								if k==i || k==aslot { //cant be same slot as existing artis
+									continue
+								}
+								for l := k+1; l<4; l++ { //slot of arti4
+									if l==i || l==aslot { //cant be same slot as existing artis
+										continue
+									}
+									for m := l+1; m<4; m++ { //slot of arti5
+										if m==i || m==aslot { //cant be same slot as existing artis
+											continue
+										}
+										for _, n := range onpieces[c][k] { //each onpiece in slot k
+											for _, o := range onpieces[c][l] { //each onpiece in slot l
+												for _, p := range onpieces[c][m] { //each onpiece in slot m
+													setcount := [maxdomain+1]int;
+													setcount[a.Set]++;
+													setcount[onpieces[c][i][j].Set]++;
+													setcount[onpieces[c][k][n].Set]++;
+													setcount[onpieces[c][l][o].Set]++;
+													setcount[onpieces[c][m][p].Set]++;
+													valid := true
+													if set[c][0] != set[c][1] {
+														if(setcount[set[c][0]]<2 || setcount[set[c][1]]<2) {
+															valid=false;
+														}
+													}
+													if valid {
+														combo[l]=onpieces[c][l][o]
+														combo[k]=onpieces[c][k][n]
+														combo[m]=onpieces[c][m][p]
+														cscore := scoreCombo(combo, desrolls, set)
+														if(cscore > maxscore) {
+															maxscore = cscore;
+															maxcombo = combo;
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
 				
+				if(maxscore > ttldr[c] - 1.0/100000.0) { //if we're within a reasnoable margin of what we want (because float round errors lol), this char is done!
+					done[c] = true
+				}
 				
-					for _, b := range 
+				//ok now recalc rpdcpc
+				if (set[c][0] == set[c][1] || (set[c][1]==set[c][0]+1 && set[c][1]%2==0)){ //if the char wants a 4pc set or 2 2pc from same domain, rpdcpc is just score. also this breaks if you enter the domains not in numerical order for a char so uh dont do that
+					rpdcpc[c][(set[c][0]-1)/2] = maxscore;
+				} else {
+					if(!done[c]) {
+						rpdcpc[c][(set[c][0]-1)/2] = Math.min(ttldr[c]/2 - 1.0/1000.0, scoreCombo(maxcombo, desrolls, set, c, 0);
+						rpdcpc[c][(set[c][1]-1)/2] = Math.min(ttldr[c]/2 - 1.0/1000.0, scoreCombo(maxcombo, desrolls, set, c, 1);
+					} else {
+						rpdcpc[c][(set[c][0]-1)/2] = ttldr[c]/2
+						rpdcpc[c][(set[c][1]-1)/2] = ttldr[c]/2
+					}
 				}
 			
 			
@@ -399,10 +523,20 @@ func getDomain(rpd []float64, rpdc []float64) (float64){
 	return dom
 }
 
-func scoreCombo(combo []Artifact, desrolls [4][lib.EndStatType]float64, set [][]int, c int) (float64) {
+func scoreCombo(combo []Artifact, desrolls [4][lib.EndStatType]float64, set [][]int, c int, selset int) (float64) {
 	score := 0
 	for _, s := range desrolls[c] {
-		score += min(desrolls[c][s], Standardize(combo[0].Subs[s]+combo[1].Subs[s]+combo[2].Subs[s]+combo[3].Subs[s]+combo[4].Subs[s],s))
+		if(selset == -1) {
+			score += Math.min(desrolls[c][s], Standardize(combo[0].Subs[s]+combo[1].Subs[s]+combo[2].Subs[s]+combo[3].Subs[s]+combo[4].Subs[s],s))
+		} else if(desrolls[c][s] > 0){
+			setscore := 0
+			for _, a := range combo {
+				if(combo[a].Set == set[c][selset]) {
+					setscore += combo[a].Subs[s]
+				}
+			}
+			score += Math.min(desrolls[c][s], Standardize(setscore))
+		}
 	}
 	return score;
 }
