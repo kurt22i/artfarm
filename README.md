@@ -1,8 +1,9 @@
  # resincalc pre-pre-alpha instructions
  
 how to use:
+0. download the code by clicking Code->Download ZIP, and unzip the folder
 1. modify config.json for your desired sim (see example config for how to do this)
-2. open command prompt in the "resincalc" folder
+2. open command prompt in the folder you downloaded (resincalc-main)
 3. use the command "go run ."
 
 example config: 
@@ -49,7 +50,7 @@ example config:
 		"42": 1
     },
     "iterations": 1000,
-    "workers": 24
+    "workers": 24 (this does nothing right now. i disabled multiple workers)
 }
 ```
 explanation: <br />
