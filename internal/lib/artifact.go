@@ -464,8 +464,8 @@ func (g *Generator) FarmArtifact(main [][lib.EndSlotType]lib.StatType, desired [
 					}
 				}
 				
-				if(maxscore > ttldr[c] - 1.0/100000.0) { //if we're within a reasnoable margin of what we want (because float round errors lol), this char is done!
-					done[c] = true
+				if(maxscore > ttldr[c] - 1.0/10000.0) { //if we're within a reasnoable margin of what we want (because float round errors lol), this char is done!
+					done[c] = true //should also delete the artis here so they can't be used by other chars ig
 				}
 				
 				//ok now recalc rpdcpc
@@ -481,7 +481,12 @@ func (g *Generator) FarmArtifact(main [][lib.EndSlotType]lib.StatType, desired [
 					}
 				}
 			
-			
+				rpdc[(set[c][0]-1)/2] = 0;
+				rpdc[(set[c][1]-1)/2] = 0;
+				for _, x := range rpdcpc { //set up domain selection stuffs
+					rpdc[(set[c][0]-1)/2] += rpdcpc[x][(set[c][0]-1)/2]
+					rpdc[(set[c][1]-1)/2] += rpdcpc[x][(set[c][1]-1)/2]
+				}
 			
 				curdom = getDomain(rollsperdomain, rpdc) //recalculate curdom, which is the domain d where rollsperdomain[d]-rpdc[d] is the highest (when this is 0, set curdom to -999)
 			}
