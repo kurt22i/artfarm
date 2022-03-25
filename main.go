@@ -12,7 +12,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/genshinsim/artfarm/internal/lib"
+	"github.com/kurt22i/artfarm/internal/lib"
 )
 
 type config struct {
@@ -40,7 +40,7 @@ func run() error {
 	var err error
 	var opt config
 	source, err = ioutil.ReadFile("./config.json")
-	
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,27 +67,27 @@ func run() error {
 			return fmt.Errorf("unrecognized main stat for %v: %v", k, v)
 		}
 		main[c][i] = s
-		if lib.StrToSlotType(k) == "Circlet" {
-			c = c+1
+		if k == "Circlet" {
+			c = c + 1
 		}
 	}
-	c=0
+	c = 0
 	c2 := 0
 	for k, v := range opt.Subs {
-	
+
 		if c >= 4 {
 			set[c2/2][c2%2] = v
 			if v > maxdomain {
 				maxdomain = v
 			}
-			c2 = c2+1
+			c2 = c2 + 1
 		} else {
 			// log.Printf("adding desired stat %v: %v\n", k, v)
 			s := lib.StrToStatType(k)
 			if s == -1 {
 				//return fmt.Errorf("unrecognized sub stat : %v", k)
-				c=c+1
-				s=0
+				c = c + 1
+				s = 0
 			}
 		}
 		if v < 0 {
@@ -141,7 +141,7 @@ type result struct {
 	err   error
 }
 
-func sim(n, w int, main [][lib.EndSlotType]lib.StatType, desired [][lib.EndStatType]float64, set [][]int, maxdomain int ) (min, max int, mean, sd float64, err error) {
+func sim(n, w int, main [][lib.EndSlotType]lib.StatType, desired [][lib.EndStatType]float64, set [][]int, maxdomain int) (min, max int, mean, sd float64, err error) {
 	var progress, ss float64
 	var sum int
 	var data []int
@@ -153,7 +153,7 @@ func sim(n, w int, main [][lib.EndSlotType]lib.StatType, desired [][lib.EndStatT
 	req := make(chan struct{})
 	done := make(chan struct{})
 	for i := 0; i < int(w); i++ {
-		m := cloneMain(main)//oh no i probably have to clone set and maxdomain dont i :(
+		m := cloneMain(main) //oh no i probably have to clone set and maxdomain dont i :(
 		d := cloneDesired(desired)
 		s := cloneSet(set)
 		go worker(m, d, s, maxdomain, req, resp, done)
