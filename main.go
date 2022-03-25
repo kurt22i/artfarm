@@ -11,7 +11,6 @@ import (
 	"math"
 	"math/rand"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/genshinsim/artfarm/internal/lib"
@@ -97,7 +96,7 @@ func run() error {
 			return fmt.Errorf("sub stat %v cannot be negative : %v", k, v)
 		}
 	}
-	println(maxdomain)
+	//println(maxdomain)
 
 	//sanity check
 	/*ok := false
@@ -111,9 +110,9 @@ func run() error {
 		return fmt.Errorf("desired_subs cannot all be 0")
 	}*/
 
-	if opt.Workers == 0 {
-		opt.Workers = runtime.NumCPU()
-	}
+	//if opt.Workers == 0 {
+	opt.Workers = 1 //runtime.NumCPU()
+	//}
 
 	if opt.Iterations == 0 {
 		opt.Iterations = 1000

@@ -213,16 +213,17 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 	var desrolls [4][numsubs]float64                      //desired standardized rolls
 	var ttldr [4]float64                                  //total desired rolls for each char
 	var done [4]bool                                      //whether or not each char is done
+	var gms [4]float64                                    //max score per char
 
 	for c := 0; c < 4; c++ {
-		for _, p := range set[0] {
+		for p := range set[0] {
 			rolls := 0.0
 			for s, t := range desired[c] {
 				rolls += Standardize(t, s) / 2
-				desrolls[c][s] += Standardize(t, s) / 2
+				desrolls[c][s] += Standardize(t, s) / 2 //min 0.5?
 				ttldr[c] += Standardize(t, s) / 2
 			}
-			rollsperdomain[(p-1)/2] += rolls
+			rollsperdomain[(set[c][p]-1)/2] += rolls
 		}
 		rpdcpc[c] = make([]float64, (maxdomain+1)/2)
 	}
@@ -467,29 +468,30 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 
 				if maxscore > ttldr[c]-1.0/10000.0 { //if we're within a reasnoable margin of what we want (because float round errors lol), this char is done!
 					done[c] = true //should also delete the artis here so they can't be used by other chars ig
-				}
-
-				//ok now recalc rpdcpc
-				if set[c][0] == set[c][1] || (set[c][1] == set[c][0]+1 && set[c][1]%2 == 0) { //if the char wants a 4pc set or 2 2pc from same domain, rpdcpc is just score. also this breaks if you enter the domains not in numerical order for a char so uh dont do that
-					rpdcpc[c][(set[c][0]-1)/2] = maxscore
-				} else {
-					if !done[c] {
-						rpdcpc[c][(set[c][0]-1)/2] = math.Min(ttldr[c]/2-1.0/1000.0, scoreCombo(maxcombo, desrolls, set, c, 0))
-						rpdcpc[c][(set[c][1]-1)/2] = math.Min(ttldr[c]/2-1.0/1000.0, scoreCombo(maxcombo, desrolls, set, c, 1))
+				} else if maxscore > gms[c] { //check if rpdc should actually be updated, or if the new arti is just a spare
+					//ok now recalc rpdcpc
+					if set[c][0] == set[c][1] || (set[c][1] == set[c][0]+1 && set[c][1]%2 == 0) { //if the char wants a 4pc set or 2 2pc from same domain, rpdcpc is just score. also this breaks if you enter the domains not in numerical order for a char so uh dont do that
+						rpdcpc[c][(set[c][0]-1)/2] = maxscore
 					} else {
-						rpdcpc[c][(set[c][0]-1)/2] = ttldr[c] / 2
-						rpdcpc[c][(set[c][1]-1)/2] = ttldr[c] / 2
+						if !done[c] {
+							rpdcpc[c][(set[c][0]-1)/2] = math.Min(ttldr[c]/2-1.0/1000.0, scoreCombo(maxcombo, desrolls, set, c, 0))
+							rpdcpc[c][(set[c][1]-1)/2] = math.Min(ttldr[c]/2-1.0/1000.0, scoreCombo(maxcombo, desrolls, set, c, 1))
+						} else {
+							rpdcpc[c][(set[c][0]-1)/2] = ttldr[c] / 2
+							rpdcpc[c][(set[c][1]-1)/2] = ttldr[c] / 2
+						}
 					}
-				}
 
-				rpdc[(set[c][0]-1)/2] = 0
-				rpdc[(set[c][1]-1)/2] = 0
-				for x := range rpdcpc { //set up domain selection stuffs
-					rpdc[(set[c][0]-1)/2] += rpdcpc[x][(set[c][0]-1)/2]
-					rpdc[(set[c][1]-1)/2] += rpdcpc[x][(set[c][1]-1)/2]
-				}
+					rpdc[(set[c][0]-1)/2] = 0
+					rpdc[(set[c][1]-1)/2] = 0
+					for x := range rpdcpc { //set up domain selection stuffs
+						rpdc[(set[c][0]-1)/2] += rpdcpc[x][(set[c][0]-1)/2]
+						rpdc[(set[c][1]-1)/2] += rpdcpc[x][(set[c][1]-1)/2]
+					}
 
-				curdom = getDomain(rollsperdomain, rpdc) //recalculate curdom, which is the domain d where rollsperdomain[d]-rpdc[d] is the highest (when this is 0, set curdom to -999)
+					gms[c] = maxscore
+					curdom = getDomain(rollsperdomain, rpdc) //recalculate curdom, which is the domain d where rollsperdomain[d]-rpdc[d] is the highest (when this is 0, set curdom to -999)
+				}
 			}
 		}
 
@@ -524,6 +526,9 @@ func calcScore(a Artifact, c int, main [4][EndSlotType]StatType, desrolls [4][nu
 	score := 0.0
 	for s, t := range desrolls[c] {
 		score += Standardize(a.Subs[s], s) * t / ttldr[c] //formula: #rolls of this stat on this arti * desired #rolls of this stat / ttl #desired rolls of all stats for this char. also standardizing it each time is probably a big ~~dps~~ speed loss so these should probably be stored
+	}
+	if score == 0 {
+		score += 0.0000001
 	}
 	return score
 }
