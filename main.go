@@ -56,14 +56,15 @@ func run() error {
 
 	var main [4][5]lib.StatType
 	var desired [4][numsubs]float64
-	var set [4][2]int //0 = any set
-	var maxdomain = -1
+	var set [4][2]int  //0 = any set
+	var maxdomain = -1 //this is misleading, it's not the max domain, it's the max set id
 
 	//parse config
-	c := 0
 	for k, v := range opt.Main {
+		c := int(k[0]) - 49
+		prop := k[1:]
 		// log.Printf("adding main stat %v: %v\n", k, v)
-		i := lib.StrToSlotType(k) //should add a way for main stat to be anything
+		i := lib.StrToSlotType(prop) //should add a way for main stat to be anything
 		if i == -1 {
 			return fmt.Errorf("unrecognized artifact slot: %v", k)
 		}
@@ -72,41 +73,31 @@ func run() error {
 			return fmt.Errorf("unrecognized main stat for %v: %v", k, v)
 		}
 		main[c][i] = s
-		if k == "Circlet" {
-			c = c + 1
-		}
 	}
-	c = 0
-	c2 := 0
-	for k, v, x := range opt.Subs {
+	for k, v := range opt.Subs {
+		c := int(k[0]) - 49
+		prop := k[1:]
 		s := -1
-		if c >= 4 {
-			println(c2, v)
-			set[c2/2][c2%2] = int(v)
+		//println("adding desired stat %v: %v\n", k, v)
+		//log.Printf("adding desired stat %v: %v\n", k, v)
+		s = int(lib.StrToStatType(prop))
+		if s == -1 {
+			if prop == "1" {
+				set[c][0] = int(v)
+			} else {
+				set[c][1] = int(v)
+			}
 			if int(v) > maxdomain {
 				maxdomain = int(v)
 			}
-			c2 = c2 + 1
 		} else {
-			//println("adding desired stat %v: %v\n", k, v)
-			//log.Printf("adding desired stat %v: %v\n", k, v)
-			s = int(lib.StrToStatType(k))
-			if s == -1 {
-				//return fmt.Errorf("unrecognized sub stat : %v", k)
-				c = c + 1
-				s = 0
-			}
-			//println("s", s)
+			desired[c][s] = v
 		}
 		if v < 0 {
 			return fmt.Errorf("sub stat %v cannot be negative : %v", k, v)
 		}
-		if c < 4 {
-			//println(c)
-			//println(s)
-			desired[c][s] = v
-		}
 	}
+	println(maxdomain)
 
 	//sanity check
 	/*ok := false

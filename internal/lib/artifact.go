@@ -188,7 +188,6 @@ type Artifact struct {
 	Slot SlotType
 	Main StatType
 	Subs []float64
-	Ok   bool
 	Set  int
 }
 
@@ -210,7 +209,7 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 	var offmap [4][5][keep]float64                        //stores the score of all the pieces
 	var rollsperdomain = make([]float64, (maxdomain+1)/2) //what we need
 	var rpdc = make([]float64, (maxdomain+1)/2)           //what we have
-	var rpdcpc = make([][]float64, (maxdomain+1)/2)       //rpdc per char
+	var rpdcpc = make([][]float64, 4)                     //rpdc per char
 	var desrolls [4][numsubs]float64                      //desired standardized rolls
 	var ttldr [4]float64                                  //total desired rolls for each char
 	var done [4]bool                                      //whether or not each char is done
@@ -225,6 +224,16 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 			}
 			rollsperdomain[(p-1)/2] += rolls
 		}
+		rpdcpc[c] = make([]float64, (maxdomain+1)/2)
+	}
+
+	for i := 0; i < 4; i++ {
+		for j := 0; j < 5; j++ {
+			for k := 0; k < keep; k++ {
+				onpieces[i][j][k].Subs = make([]float64, numsubs)
+				offpieces[i][j][k].Subs = make([]float64, numsubs)
+			}
+		}
 	}
 
 	var curdom int = getDomain(rollsperdomain, rpdc) //location of the max value of rollsperdomain
@@ -232,7 +241,6 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 	for count < maxTries && curdom != -999 {
 		count++
 		var a Artifact
-		a.Ok = true
 
 		a.Set = curdom*2 + g.r.Intn(2)
 		a.Slot = SlotType(g.r.Intn(5))
