@@ -197,7 +197,7 @@ type Artifact struct {
 	Set  int
 }
 
-const maxTries = 1000000000 //1 bil
+const maxTries = 100000000
 
 //FarmArtifact return number of tries it tooks to reach the desired subs
 //main is the desired main stat; if main == EndStatType then there's no requirement
@@ -206,20 +206,20 @@ func (g *Generator) FarmArtifact(main [][lib.EndSlotType]lib.StatType, desired [
 	var req, score float64
 	count := 0
 	//bag := make([]Artifact, EndSlotType)
-	keep := 5; the number of on and off pieces to store for optimizing per slot per char
-	onpieces := [4][5][keep]Artifact; //first [] is which char, second is what type it is, third is which of the 5 stored artis it is
-	offpieces := [4][5][keep]Artifact;
-	onmin := [4][5]float64; //first [] is which char, second is is what type. stores the score the arti that is most replacable.
-	onloc := [4][5]int; //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
-	onmap := [4][5][keep]float64; //stores the score of all the pieces
-	offmin := [4][5]float64; //first [] is which char, second is is what type. stores the score the arti that is most replacable.
-	offloc := [4][5]int; //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
-	offmap := [4][5][keep]float64; //stores the score of all the pieces
-	//rollsperset := [maxdomain]float64;
-	rollsperdomain := [(maxdomain+1)/2]float64; //what we need
-	rpdc := [(maxdomain+1)/2]float64; //what we have
-	rpdcpc := [4][(maxdomain+1)/2]float64; //rpdc per char
-	done := [4]bool; //whether or not each char is done
+	keep := 5 //the number of on and off pieces to store for optimizing per slot per char
+	onpieces := [4][5][keep]Artifact //first [] is which char, second is what type it is, third is which of the 5 stored artis it is
+	offpieces := [4][5][keep]Artifact
+	onmin := [4][5]float64 //first [] is which char, second is is what type. stores the score the arti that is most replacable.
+	onloc := [4][5]int //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
+	onmap := [4][5][keep]float64 //stores the score of all the pieces
+	offmin := [4][5]float64 //first [] is which char, second is is what type. stores the score the arti that is most replacable.
+	offloc := [4][5]int //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
+	offmap := [4][5][keep]float64 //stores the score of all the pieces
+	//rollsperset := [maxdomain]float64
+	rollsperdomain := [(maxdomain+1)/2]float64 //what we need
+	rpdc := [(maxdomain+1)/2]float64 //what we have
+	rpdcpc := [4][(maxdomain+1)/2]float64 //rpdc per char
+	done := [4]bool //whether or not each char is done
 	
 	for _, c := range set {
 		for _, p := range set[0] {
@@ -236,7 +236,7 @@ func (g *Generator) FarmArtifact(main [][lib.EndSlotType]lib.StatType, desired [
 			req += 1
 		}
 	}*/
-	curdom := location of the max value of rollsperdomain//needtoimplementthis
+	//curdom := location of the max value of rollsperdomain (ineedtoimplementthis)
 
 NEXT:
 	for count < maxTries && curdom!=-999 {
@@ -296,9 +296,9 @@ NEXT:
 				//-if a combination is found where score = ttl desired stat rolls (ie we found a set that works), change done[c] to true and exit loop (when done is changed to true, maybe these artifacts should be deleted, so that no other chars can use them, idk)
 				//-once all combinations are searched, recalculate rpdcpc[c]
 				//	-if the char uses 4pc set (or if two 2pc from same domain), this is simply done by rpdcpc[c][domainwiththatset] = score
-				//  -if the char uses 2 (or 1&rainbow) 2pc sets, this is done by rpdcpc[c][domainwitha2pcset] = min(ttl desired rolls for this char/2, the score recalcuated from the winning combination but using only artifacts from this set)
+				//  -if the char uses 2 (or 1&rainbow) 2pc sets, this is done by rpdcpc[c][domainwitha2pcset] = min(ttl desired rolls for this char/2 - 0.001, the score recalcuated from the winning combination but using only artifacts from this set)
 				//recalculate rpdc which is just the sum of rpdcpc
-				//recalculate curdom, which is the domain d where rollsperdomain[d]-rpdc[d] is the highest
+				//recalculate curdom, which is the domain d where rollsperdomain[d]-rpdc[d] is the highest (when this is 0, set curdom to -999)
 			}
 		}
 		
@@ -308,7 +308,7 @@ NEXT:
 		return -1, errors.New("maximum tries exceeded; requirement not met")
 	}
 	
-	//once we're here we have all artifacts for ppl who need certain sets, farm more here if theres a char that can use full rainbow (2pc + rainbow should also already be complete.. actually no i think there's cases where it wouldn't be)
+	//once we're here we have all artifacts for ppl who need certain sets, farm more here if theres a char that can use full rainbow (2pc + rainbow should also already be complete.. actually no i think there's cases where it wouldn't be, in that case farm the 2pc domain bc why not)
 	
 	return count,nil;
 }
