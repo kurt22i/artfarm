@@ -125,6 +125,8 @@ func run() error {
 		return err
 	}
 	fmt.Printf("avg: %v, min: %v, max: %v, sd: %v\n", mean, min, max, sd)
+	fmt.Printf("avg resin: %v\n", mean*37.38)
+	fmt.Printf("avg days: %v\n", mean*37.38/180.0)
 
 	return nil
 }
@@ -149,21 +151,21 @@ func sim(n, w int, main [4][lib.EndSlotType]lib.StatType, desired [4][numsubs]fl
 	max = -1
 	count := n
 
-	resp := make(chan result, n)
-	req := make(chan struct{})
-	done := make(chan struct{})
+	//resp := make(chan result, n)
+	//req := make(chan struct{})
+	//done := make(chan struct{})
 	for i := 0; i < int(w); i++ {
-		m := cloneMain(main) //oh no i probably have to clone set and maxdomain dont i :(
-		d := cloneDesired(desired)
-		s := cloneSet(set)
-		go worker(m, d, s, maxdomain, req, resp, done)
+		//m := cloneMain(main) //oh no i probably have to clone set and maxdomain dont i :(
+		//d := cloneDesired(desired)
+		//s := cloneSet(set)
+		//go worker(m, d, s, maxdomain, req, resp, done)
 	}
 
 	go func() {
 		var wip int
 		for wip < n {
 			//try sending a job to req chan while wip < cfg.NumSim
-			req <- struct{}{}
+			//req <- struct{}{}
 			wip++
 		}
 	}()
@@ -171,20 +173,29 @@ func sim(n, w int, main [4][lib.EndSlotType]lib.StatType, desired [4][numsubs]fl
 	fmt.Print("\tProgress: 0%")
 
 	for count > 0 {
-		r := <-resp
-		if r.err != nil {
+		//r := <-resp
+		/*if r.err != nil {
 			err = r.err
+			return
+		}*/
+
+		seed := time.Now().UnixNano()
+		r := rand.New(rand.NewSource(seed))
+		gen := lib.NewGenerator(r)
+		newsim, err2 := gen.FarmArtifact(main, desired, set, maxdomain)
+		if err2 != nil {
+			err = err2
 			return
 		}
 
-		data = append(data, r.count)
+		data = append(data, newsim)
 		count--
-		sum += r.count
-		if r.count < min {
-			min = r.count
+		sum += newsim
+		if newsim < min {
+			min = newsim
 		}
-		if r.count > max {
-			max = r.count
+		if newsim > max {
+			max = newsim
 		}
 
 		if (1 - float64(count)/float64(n)) > (progress + 0.1) {
@@ -193,7 +204,7 @@ func sim(n, w int, main [4][lib.EndSlotType]lib.StatType, desired [4][numsubs]fl
 		}
 	}
 	fmt.Printf("\n")
-	close(done)
+	//close(done)
 
 	mean = float64(sum) / float64(n)
 

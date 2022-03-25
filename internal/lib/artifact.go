@@ -236,7 +236,7 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 			}
 		}
 	}
-
+	//hmm we need farm overrides. if u cant make a valid set, the domain preventing that needs to be farmed above all else. (unless strongboxable but uh not adding that yet lol)
 	var curdom int = getDomain(rollsperdomain, rpdc) //location of the max value of rollsperdomain
 
 	for count < maxTries && curdom != -999 {
@@ -321,7 +321,7 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 										for n := range onpieces[c][k] { //each onpiece in slot k
 											for o := range onpieces[c][l] { //each onpiece in slot l
 												for p := range onpieces[c][m] { //each onpiece in slot m
-													var setcount = make([]int, maxdomain+1)
+													var setcount = make([]int, maxdomain+2)
 													setcount[a.Set]++
 													setcount[offpieces[c][i][j].Set]++
 													setcount[onpieces[c][k][n].Set]++
@@ -413,7 +413,123 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 					}
 
 					//unfortunate that i have to insert this section but... idk how else
-					//if it was a function the clutter would be elsewhere but long init line so dont want to
+					//if it was a function the clutter would be elsewhere but long init line so dont want
+					if maxscore == 0 && (set[c][0]-1)/2 != (set[c][1]-1)/2 {
+						gms[c] = 0
+						//1 off, 4 on.. ugh this doesnt support rainbow ;-; halp
+						for i := range offpieces[c] {
+							if i == int(aslot) { //dont check offpieces that are the same slot as our new onpiece
+								continue
+							}
+							for j := range offpieces[c][i] { //ok now these are all the offpieces. search all combos with this offpiece, the new onpiece, and 3 other on pieces.
+								combo[i] = offpieces[c][i][j]
+								for k := 0; k < 5; k++ { //slot of arti3... hm maybe should have array or something that takes 2 slots and returns the 3 other ones lol
+									if k == i || k == int(aslot) { //cant be same slot as existing artis
+										continue
+									}
+									for l := k + 1; l < 5; l++ { //slot of arti4
+										if l == i || l == int(aslot) { //cant be same slot as existing artis
+											continue
+										}
+										for m := l + 1; m < 5; m++ { //slot of arti5
+											if m == i || m == int(aslot) { //cant be same slot as existing artis
+												continue
+											}
+											for n := range onpieces[c][k] { //each onpiece in slot k
+												for o := range onpieces[c][l] { //each onpiece in slot l
+													for p := range onpieces[c][m] { //each onpiece in slot m
+														var setcount = make([]int, maxdomain+2)
+														setcount[a.Set]++
+														setcount[offpieces[c][i][j].Set]++
+														setcount[onpieces[c][k][n].Set]++
+														setcount[onpieces[c][l][o].Set]++
+														setcount[onpieces[c][m][p].Set]++
+														valid := true
+														// if set[c][0] == set[c][1] {
+														// 	if setcount[set[c][0]] < 4 { //is this check needed? shouldnt be, since all onpieces should be of the right set in this case
+														// 		valid = false
+														// 	}
+														// } else {
+														// 	if setcount[set[c][0]] < 4 && setcount[set[c][1]] < 4 {
+														// 		valid = false
+														// 	}
+														// }
+														// if c == 2 && n == 0 && p == 0 && o == 0 {
+														// 	println("asjlf")
+														// }
+														if valid {
+															combo[l] = onpieces[c][l][o]
+															combo[k] = onpieces[c][k][n]
+															combo[m] = onpieces[c][m][p]
+															cscore := scoreCombo(combo, desrolls, set, c, -1) / 16
+															if cscore > maxscore {
+																maxscore = cscore
+																maxcombo = combo
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+
+						//5 on
+						for i := range onpieces[c] {
+							if i == int(aslot) { //dont check onpieces that are the same slot as our new onpiece
+								continue
+							}
+							for j := range onpieces[c][i] { //ok now this is lazy code because i only really needed this loop to go here for offpieces but its easier than restructuring the whole thing so
+								combo[i] = onpieces[c][i][j]
+								for k := 0; k < 5; k++ { //slot of arti3... hm maybe should have array or something that takes 2 slots and returns the 3 other ones lol
+									if k == i || k == int(aslot) { //cant be same slot as existing artis
+										continue
+									}
+									for l := k + 1; l < 5; l++ { //slot of arti4
+										if l == i || l == int(aslot) { //cant be same slot as existing artis
+											continue
+										}
+										for m := l + 1; m < 5; m++ { //slot of arti5
+											if m == i || m == int(aslot) { //cant be same slot as existing artis
+												continue
+											}
+											for n := range onpieces[c][k] { //each onpiece in slot k
+												for o := range onpieces[c][l] { //each onpiece in slot l
+													for p := range onpieces[c][m] { //each onpiece in slot m
+														var setcount = make([]int, maxdomain+1)
+														setcount[a.Set]++
+														setcount[onpieces[c][i][j].Set]++
+														setcount[onpieces[c][k][n].Set]++
+														setcount[onpieces[c][l][o].Set]++
+														setcount[onpieces[c][m][p].Set]++
+														valid := true
+														// if set[c][0] != set[c][1] {
+														// 	if setcount[set[c][0]] < 4 && setcount[set[c][1]] < 4 {
+														// 		valid = true
+														// 	}
+														// }
+														if valid {
+															combo[l] = onpieces[c][l][o]
+															combo[k] = onpieces[c][k][n]
+															combo[m] = onpieces[c][m][p]
+															cscore := scoreCombo(combo, desrolls, set, c, -1) / 16
+															if cscore > maxscore {
+																maxscore = cscore
+																maxcombo = combo
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+					//end of unnecessary ugly section
 
 				} else { //new artifact is offpiece. so, only need to search with this + 4 onpieces.
 					for i := 0; i < 5; i++ {
@@ -437,7 +553,7 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 										for n := range onpieces[c][k] { //each onpiece in slot k
 											for o := range onpieces[c][l] { //each onpiece in slot l
 												for p := range onpieces[c][m] { //each onpiece in slot m
-													var setcount = make([]int, maxdomain+1)
+													var setcount = make([]int, maxdomain+2)
 													setcount[a.Set]++
 													setcount[onpieces[c][i][j].Set]++
 													setcount[onpieces[c][k][n].Set]++
