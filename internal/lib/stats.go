@@ -330,7 +330,7 @@ var MainStatWeight = [][]float64{
 	},
 	//circlet
 	{
-		1100, //def%
+		1100, //def% check if these are right
 		0,    //def
 		0,    //hp
 		1100, //hp%

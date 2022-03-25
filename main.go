@@ -78,27 +78,32 @@ func run() error {
 	}
 	c = 0
 	c2 := 0
-	for k, v := range opt.Subs {
-		s := -299
+	for k, v, x := range opt.Subs {
+		s := -1
 		if c >= 4 {
+			println(c2, v)
 			set[c2/2][c2%2] = int(v)
 			if int(v) > maxdomain {
 				maxdomain = int(v)
 			}
 			c2 = c2 + 1
 		} else {
-			// log.Printf("adding desired stat %v: %v\n", k, v)
-			s := lib.StrToStatType(k)
+			//println("adding desired stat %v: %v\n", k, v)
+			//log.Printf("adding desired stat %v: %v\n", k, v)
+			s = int(lib.StrToStatType(k))
 			if s == -1 {
 				//return fmt.Errorf("unrecognized sub stat : %v", k)
 				c = c + 1
 				s = 0
 			}
+			//println("s", s)
 		}
 		if v < 0 {
 			return fmt.Errorf("sub stat %v cannot be negative : %v", k, v)
 		}
 		if c < 4 {
+			//println(c)
+			//println(s)
 			desired[c][s] = v
 		}
 	}
@@ -120,7 +125,7 @@ func run() error {
 	}
 
 	if opt.Iterations == 0 {
-		opt.Iterations = 100000
+		opt.Iterations = 1000
 	}
 
 	defer elapsed(fmt.Sprintf("simulation complete; %v iterations", opt.Iterations))()
