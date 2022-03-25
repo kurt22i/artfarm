@@ -1,4 +1,4 @@
- # resincalc pre-pre-alpha
+ # resincalc pre-pre-alpha instructions
  
 how to use:
 1. modify config.json for your desired sim (see example config for how to do this)
