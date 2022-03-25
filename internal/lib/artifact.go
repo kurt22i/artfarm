@@ -231,7 +231,7 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 	for i := 0; i < 4; i++ {
 		for j := 0; j < 5; j++ {
 			for k := 0; k < keep; k++ {
-				onpieces[i][j][k].Subs = make([]float64, numsubs)
+				onpieces[i][j][k].Subs = make([]float64, numsubs) //2pc+2pc is broken with this system.. unfair to the 2nd 2pc set
 				offpieces[i][j][k].Subs = make([]float64, numsubs)
 			}
 		}
@@ -243,7 +243,7 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 		count++
 		var a Artifact
 
-		a.Set = curdom*2 + g.r.Intn(2)
+		a.Set = curdom*2 + g.r.Intn(2) + 1
 		a.Slot = SlotType(g.r.Intn(5))
 		a.Main, err = g.RandMain(a.Slot)
 		if err != nil {
@@ -251,9 +251,6 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 		}
 		//generate subs
 		a.Subs = g.RandSubsNoHist(a.Main, 20)
-
-		//update bag
-		//onpieces, offpieces, onmin, onmap, offmin, offmap, rpdc, curdom = update(onpieces, offpieces, onmin, onmap, offmin, offmap, rpdc, a, main, desired)
 
 		//uh just pretend this is a function
 		for c := 0; c < 4; c++ {
@@ -309,15 +306,15 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 						}
 						for j := range offpieces[c][i] { //ok now these are all the offpieces. search all combos with this offpiece, the new onpiece, and 3 other on pieces.
 							combo[i] = offpieces[c][i][j]
-							for k := 0; k < 4; k++ { //slot of arti3... hm maybe should have array or something that takes 2 slots and returns the 3 other ones lol
+							for k := 0; k < 5; k++ { //slot of arti3... hm maybe should have array or something that takes 2 slots and returns the 3 other ones lol
 								if k == i || k == int(aslot) { //cant be same slot as existing artis
 									continue
 								}
-								for l := k + 1; l < 4; l++ { //slot of arti4
+								for l := k + 1; l < 5; l++ { //slot of arti4
 									if l == i || l == int(aslot) { //cant be same slot as existing artis
 										continue
 									}
-									for m := l + 1; m < 4; m++ { //slot of arti5
+									for m := l + 1; m < 5; m++ { //slot of arti5
 										if m == i || m == int(aslot) { //cant be same slot as existing artis
 											continue
 										}
@@ -340,6 +337,9 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 															valid = false
 														}
 													}
+													// if c == 2 && n == 0 && p == 0 && o == 0 {
+													// 	println("asjlf")
+													// }
 													if valid {
 														combo[l] = onpieces[c][l][o]
 														combo[k] = onpieces[c][k][n]
@@ -366,15 +366,15 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 						}
 						for j := range onpieces[c][i] { //ok now this is lazy code because i only really needed this loop to go here for offpieces but its easier than restructuring the whole thing so
 							combo[i] = onpieces[c][i][j]
-							for k := 0; k < 4; k++ { //slot of arti3... hm maybe should have array or something that takes 2 slots and returns the 3 other ones lol
+							for k := 0; k < 5; k++ { //slot of arti3... hm maybe should have array or something that takes 2 slots and returns the 3 other ones lol
 								if k == i || k == int(aslot) { //cant be same slot as existing artis
 									continue
 								}
-								for l := k + 1; l < 4; l++ { //slot of arti4
+								for l := k + 1; l < 5; l++ { //slot of arti4
 									if l == i || l == int(aslot) { //cant be same slot as existing artis
 										continue
 									}
-									for m := l + 1; m < 4; m++ { //slot of arti5
+									for m := l + 1; m < 5; m++ { //slot of arti5
 										if m == i || m == int(aslot) { //cant be same slot as existing artis
 											continue
 										}
@@ -412,22 +412,25 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 						}
 					}
 
+					//unfortunate that i have to insert this section but... idk how else
+					//if it was a function the clutter would be elsewhere but long init line so dont want to
+
 				} else { //new artifact is offpiece. so, only need to search with this + 4 onpieces.
-					for i := range onpieces[c] {
+					for i := 0; i < 5; i++ {
 						if i == int(aslot) { //dont check onpieces that are the same slot as our new offpiece
 							continue
 						}
 						for j := range onpieces[c][i] { //ok now this is lazy code because i only really needed this loop to go here for... uh idk im confused too at this point
 							combo[i] = onpieces[c][i][j]
-							for k := 0; k < 4; k++ { //slot of arti3... hm maybe should have array or something that takes 2 slots and returns the 3 other ones lol
+							for k := i + 1; k < 5; k++ { //slot of arti3... hm maybe should have array or something that takes 2 slots and returns the 3 other ones lol
 								if k == i || k == int(aslot) { //cant be same slot as existing artis
 									continue
 								}
-								for l := k + 1; l < 4; l++ { //slot of arti4
+								for l := k + 1; l < 5; l++ { //slot of arti4
 									if l == i || l == int(aslot) { //cant be same slot as existing artis
 										continue
 									}
-									for m := l + 1; m < 4; m++ { //slot of arti5
+									for m := l + 1; m < 5; m++ { //slot of arti5
 										if m == i || m == int(aslot) { //cant be same slot as existing artis
 											continue
 										}
@@ -468,25 +471,29 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 
 				if maxscore > ttldr[c]-1.0/10000.0 { //if we're within a reasnoable margin of what we want (because float round errors lol), this char is done!
 					done[c] = true //should also delete the artis here so they can't be used by other chars ig
+					rpdcpc[c][(set[c][0]-1)/2] = ttldr[c] / 2
+					rpdcpc[c][(set[c][1]-1)/2] = ttldr[c] / 2
+					if (set[c][0]-1)/2 == (set[c][1]-1)/2 {
+						rpdcpc[c][(set[c][0]-1)/2] = ttldr[c]
+					}
 				} else if maxscore > gms[c] { //check if rpdc should actually be updated, or if the new arti is just a spare
 					//ok now recalc rpdcpc
 					if set[c][0] == set[c][1] || (set[c][1] == set[c][0]+1 && set[c][1]%2 == 0) { //if the char wants a 4pc set or 2 2pc from same domain, rpdcpc is just score. also this breaks if you enter the domains not in numerical order for a char so uh dont do that
 						rpdcpc[c][(set[c][0]-1)/2] = maxscore
 					} else {
-						if !done[c] {
-							rpdcpc[c][(set[c][0]-1)/2] = math.Min(ttldr[c]/2-1.0/1000.0, scoreCombo(maxcombo, desrolls, set, c, 0))
-							rpdcpc[c][(set[c][1]-1)/2] = math.Min(ttldr[c]/2-1.0/1000.0, scoreCombo(maxcombo, desrolls, set, c, 1))
-						} else {
-							rpdcpc[c][(set[c][0]-1)/2] = ttldr[c] / 2
-							rpdcpc[c][(set[c][1]-1)/2] = ttldr[c] / 2
-						}
+						rpdcpc[c][(set[c][0]-1)/2] = math.Min(ttldr[c]/2-1.0/1000.0, scoreCombo(maxcombo, desrolls, set, c, 0))
+						rpdcpc[c][(set[c][1]-1)/2] = math.Min(ttldr[c]/2-1.0/1000.0, scoreCombo(maxcombo, desrolls, set, c, 1))
 					}
+				}
 
+				if maxscore > gms[c] {
 					rpdc[(set[c][0]-1)/2] = 0
 					rpdc[(set[c][1]-1)/2] = 0
 					for x := range rpdcpc { //set up domain selection stuffs
 						rpdc[(set[c][0]-1)/2] += rpdcpc[x][(set[c][0]-1)/2]
-						rpdc[(set[c][1]-1)/2] += rpdcpc[x][(set[c][1]-1)/2]
+						if (set[c][1]-1)/2 != (set[c][0]-1)/2 {
+							rpdc[(set[c][1]-1)/2] += rpdcpc[x][(set[c][1]-1)/2]
+						}
 					}
 
 					gms[c] = maxscore
