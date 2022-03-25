@@ -1,29 +1,76 @@
-# artfarm
+ # resincalc pre-pre-alpha
+ 
+how to use:
+1. modify config.json for your desired sim (see example config for how to do this)
+2. open command prompt in the "resincalc" folder
+3. use the command "go run ."
 
-This is a simple tool that calculates on average how many artifact drops it will take to farm a 4 piece set with the desired main stat and desired amount of certain sub stats.
-
-Simply modify the config file and run the tool. Sample config as follows:
-
+example config: 
 ```json
 {
     "main_stat": {
-        "flower": "hp",
-        "feather": "atk",
-        "sand": "atk%",
-        "goblet": "pyro%",
-        "circlet": "cr"
+        "1flower": "hp",
+        "1feather": "atk",
+        "1sand": "def%",
+        "1goblet": "geo%",
+        "1circlet": "cd",
+        "2flower": "hp",
+        "2feather": "atk",
+        "2sand": "er",
+        "2goblet": "geo%",
+        "2circlet": "cr",
+        "3flower": "hp",
+        "3feather": "atk",
+        "3sand": "hp%",
+        "3goblet": "geo%",
+        "3circlet": "cr",
+        "4flower": "hp",
+        "4feather": "atk",
+        "4sand": "def%",
+        "4goblet": "geo%",
+        "4circlet": "cr"
     },
     "desired_subs": {
-        "cr": 0.24,
-        "cd": 0.3
+        "1cr": 0.33,
+        "1cd": 0.67,
+        "1def%": 0.2,
+        "2er": 0.551,
+        "3hp%": 0.01,
+        "4def%": 0.2,
+        "4cr": 0.33,
+        "4cd": 0.67,
+		"11": 1,
+		"12": 1,
+		"21": 3,
+		"22": 3,
+		"31": 5,
+		"32": 5,
+		"41": 1,
+		"42": 1
     },
-    "iterations": 100000,
+    "iterations": 1000,
     "workers": 24
 }
 ```
+explanation: 
+in main_stat, for each of the four characters you want artifacts for, enter their wanted mainstats.
+in desired_subs, first enter the substats each character desires, in the format "(charnum)(stat)": (statvalue), for example, "3cr": 0.33 means that character 3's artifacts must have a total of 33% crit rate from substats
+then, set the artifact sets each character will use. this uses the format "(charnum)(2pcset)": (artifactid). each number corresponds to one artifact set, and even numbers are treated as being in the same domain as the odd number one lower.
+follow the example below: 
 
-The following is a list of acceptable input (**CASE SENSITIVE**) for stat types
+Let's say we want character1 to use 2pcEmblem + 2pc SR, character2 to use 4ToTM, character3 to use 2SR + 2TF, and character4 to use 2PF + 2BSC.
+```
+"11": 1,       we set character 1's first set as id 1, which we will use as emblem.
+"12": 2,	   shimenawa is in the same domain as emblem, so it should be exactly emblem+1
+"21": 3,	   character2 uses 4pc ToTM. We set this as artifact id 3.
+"22": 3,       since character2 uses a 4pc, their 2nd 2pc set is also ToTM.
+"31": 2,	   character3 has 2pc Shimenawa. we already defined this as id 2, so we use it here.
+"32": 5,	   character3's second 2pc set is thundering fury. We define this as 5, because 4 is considered to be in the same domain as 3(which is totm).
+"41": 4,	   now, we define Pale Flame as 4, since it is in the same domain as ToTM so its id should be exactly one above ToTM's.
+"42": 7,	   finally, we define BSC as id 7, since it's not in any of the existing domains.
+```
 
+The following is a list of acceptable input for stat types
 ```
 def%
 def
@@ -45,14 +92,4 @@ geo%
 phys%
 ```
 
-Also note that the tool will not validate your input (i.e. feather with atk%). It will simply never reach a result since you can never acquire a feather with atk% main stat.
-
-## Algorithm
-
-The tool follows a very simple greedy algorithm where it will generate a random artifact, and keep it if the following criteria are met (replacing any existing):
-
-- It is either on set (50/50 chance) OR if not on set, then it is a goblet piece with the desired main stat
-- it has the desired main stat
-- The total substat with this new random artifact is closer percentage wise to the desired substat than the existing artifact it is replacing.
-
-Note in practice this will most likely overestimate the total drops required to reach the desired sub threshold.
+base code by srl, modified by me(Kurt#5846)

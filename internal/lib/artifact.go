@@ -461,7 +461,7 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 															combo[l] = onpieces[c][l][o]
 															combo[k] = onpieces[c][k][n]
 															combo[m] = onpieces[c][m][p]
-															cscore := scoreCombo(combo, desrolls, set, c, -1) / 16
+															cscore := scoreCombo(combo, desrolls, set, c, -1) / 100
 															if cscore > maxscore {
 																maxscore = cscore
 																maxcombo = combo
@@ -514,7 +514,7 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 															combo[l] = onpieces[c][l][o]
 															combo[k] = onpieces[c][k][n]
 															combo[m] = onpieces[c][m][p]
-															cscore := scoreCombo(combo, desrolls, set, c, -1) / 16
+															cscore := scoreCombo(combo, desrolls, set, c, -1) / 100
 															if cscore > maxscore {
 																maxscore = cscore
 																maxcombo = combo
@@ -585,12 +585,15 @@ func (g *Generator) FarmArtifact(main [4][EndSlotType]StatType, desired [4][nums
 					}
 				}
 
-				if maxscore > ttldr[c]-1.0/10000.0 { //if we're within a reasnoable margin of what we want (because float round errors lol), this char is done!
+				if maxscore > ttldr[c]-1.0/10000.0 { //if we're within a reasonable margin of what we want (because float round errors lol), this char is done!
 					done[c] = true //should also delete the artis here so they can't be used by other chars ig
 					rpdcpc[c][(set[c][0]-1)/2] = ttldr[c] / 2
 					rpdcpc[c][(set[c][1]-1)/2] = ttldr[c] / 2
 					if (set[c][0]-1)/2 == (set[c][1]-1)/2 {
 						rpdcpc[c][(set[c][0]-1)/2] = ttldr[c]
+					}
+					if done[0] && done[1] && done[2] && done[3] {
+						return count, nil
 					}
 				} else if maxscore > gms[c] { //check if rpdc should actually be updated, or if the new arti is just a spare
 					//ok now recalc rpdcpc
