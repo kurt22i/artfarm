@@ -181,14 +181,6 @@ func PrintSubs(in [][]float64) {
 	}
 }
 
-/*type Set struct {
-	Flower Artifact
-	Feather Artifact
-	Sands Artifact
-	Goblet Artifact
-	Circlet Artifact
-}*/
-
 type Artifact struct {
 	Slot SlotType
 	Main StatType
@@ -205,7 +197,6 @@ func (g *Generator) FarmArtifact(main [][lib.EndSlotType]lib.StatType, desired [
 	var err error
 	var req, score float64
 	count := 0
-	//bag := make([]Artifact, EndSlotType)
 	keep := 5 //the number of on and off pieces to store for optimizing per slot per char
 	onpieces := [4][5][keep]Artifact //first [] is which char, second is what type it is, third is which of the 5 stored artis it is
 	offpieces := [4][5][keep]Artifact
@@ -215,30 +206,25 @@ func (g *Generator) FarmArtifact(main [][lib.EndSlotType]lib.StatType, desired [
 	offmin := [4][5]float64 //first [] is which char, second is is what type. stores the score the arti that is most replacable.
 	offloc := [4][5]int //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
 	offmap := [4][5][keep]float64 //stores the score of all the pieces
-	//rollsperset := [maxdomain]float64
 	rollsperdomain := [(maxdomain+1)/2]float64 //what we need
 	rpdc := [(maxdomain+1)/2]float64 //what we have
 	rpdcpc := [4][(maxdomain+1)/2]float64 //rpdc per char
+	desrolls := [4][lib.EndStatType]float64 //desired standardized rolls
 	done := [4]bool //whether or not each char is done
-	
+
 	for _, c := range set {
 		for _, p := range set[0] {
 			rolls := 0
 			for _, s := range desired[c] {
 				rolls += Standardize(desired[c][s])/2
+				desrolls[c][s] += Standardize(desired[c][s])
 			}
 			rollsperdomain[(p-1)/2] += rolls
 		}
 	}
+	
+	curdom := getDomain(rollsperdomain,rpdc); //location of the max value of rollsperdomain (ineedtoimplementthis)
 
-	/*for _, v := range desired {
-		if v > 0 {
-			req += 1
-		}
-	}*/
-	//curdom := location of the max value of rollsperdomain (ineedtoimplementthis)
-
-NEXT:
 	for count < maxTries && curdom!=-999 {
 		count++
 		var a Artifact
@@ -265,31 +251,32 @@ NEXT:
 			updateRPDC := false; //optimially this is just a function but that initialization line would be so long
 			ison := false; //lets us check less combinations
 			newloc :=-1;
+			aslot := typetonum(a.SlotType)
 			
 			if(!done[c]) {
 				score := calcScore(a, c, main, desired)
 				if isOnpiece(a, set) {
-					if score > onmin[c][typetonum(a.SlotType)] {
-						newloc = onloc[c][typetonum(a.SlotType)]
-						onpieces[c][typetonum(a.SlotType)][newloc] = a
-						onmap[c][typetonum(a.SlotType)][newloc] = score
-						onmin[c][typetonum(a.SlotType)], onloc[c][typetonum(a.SlotType)] = calcMin(c, typetonum(a.SlotType), onmap)
-						updateRPDC = true;
-						ison = true;
+					if score > onmin[c][aslot] {
+						newloc = onloc[c][aslot]
+						onpieces[c][aslot][newloc] = a
+						onmap[c][aslot][newloc] = score
+						onmin[c][aslot], onloc[c][aslot] = calcMin(c, aslot, onmap)
+						updateRPDC = true
+						ison = true
 					}
 				} else {
-					if score > offmin[c][typetonum(a.SlotType)] {
-						newloc = offloc[c][typetonum(a.SlotType)]
-						offpieces[c][typetonum(a.SlotType)][newloc] = a
-						offmap[c][typetonum(a.SlotType)][newloc] = score
-						offmin[c][typetonum(a.SlotType)], offloc[c][typetonum(a.SlotType)] = calcMin(c, typetonum(a.SlotType), offmap)
-						updateRPDC = true;
+					if score > offmin[c][aslot] {
+						newloc = offloc[c][aslot]
+						offpieces[c][aslot][newloc] = a
+						offmap[c][aslot][newloc] = score
+						offmin[c][aslot], offloc[c][aslot] = calcMin(c, aslot, offmap)
+						updateRPDC = true
 					}
 				}
 			}
 			
 			if(updateRPDC) {
-				//basically:
+				//this is what should happen here:
 				//-go thru all valid combinations (correct sets etc) from this char's onpieces and offpieces that involve the new artifact
 				//-score each combination: foreachdesiredstat(score+= min(rolls of this stat with this combination, desired rolls of this stat))
 				//-keep track of the combination with the highest score
@@ -299,6 +286,80 @@ NEXT:
 				//  -if the char uses 2 (or 1&rainbow) 2pc sets, this is done by rpdcpc[c][domainwitha2pcset] = min(ttl desired rolls for this char/2 - 0.001, the score recalcuated from the winning combination but using only artifacts from this set)
 				//recalculate rpdc which is just the sum of rpdcpc
 				//recalculate curdom, which is the domain d where rollsperdomain[d]-rpdc[d] is the highest (when this is 0, set curdom to -999)
+				
+				maxcombo := [5]Artifact
+				maxscore := 0
+				if ison {
+					combo := [5]Artifact
+					combo[aslot] = a
+					//1 off, 4 on.. ugh this doesnt support rainbow ;-; halp
+					for _, i := range offpieces[c] {
+						if i == a.SlotType { //dont check offpieces that are the same slot as our new onpiece
+							continue
+						}
+						for _, j := range offpieces[c][i] { //ok now these are all the offpieces. search all combos with this offpiece, the new onpiece, and 3 other on pieces.
+							combo[i] = offpieces[c][i][j]
+							for k := 0; k<4; k++ { //slot of arti3... hm maybe should have array or something that takes 2 slots and returns the 3 other ones lol
+								if k==i || k==aslot { //cant be same slot as existing artis
+									continue
+								}
+								for l := k+1; l<4; l++ { //slot of arti4
+									if l==i || l==aslot { //cant be same slot as existing artis
+										continue
+									}
+									for m := l+1; m<4; m++ { //slot of arti5
+										if m==i || m==aslot { //cant be same slot as existing artis
+											continue
+										}
+										for _, n := range onpieces[c][k] { //each onpiece in slot k
+											for _, o := range onpieces[c][l] { //each onpiece in slot l
+												for _, p := range onpieces[c][m] { //each onpiece in slot m
+													setcount := [maxdomain+1]int;
+													setcount[a.Set]++;
+													setcount[offpieces[c][i][j].Set]++;
+													setcount[onpieces[c][k][n].Set]++;
+													setcount[onpieces[c][l][o].Set]++;
+													setcount[onpieces[c][m][p].Set]++;
+													valid := true
+													if set[c][0] == set[c][1] {
+														if setcount[set[c][0]]<4 {//is this check needed? shouldnt be, since all onpieces should be of the right set in this case
+															valid = false
+														}
+													} else {
+														if(setcount[set[c][0]]<2 || setcount[set[c][1]]<2) {
+															valid=false;
+														}
+													}
+													if valid {
+														combo[l]=onpieces[c][l][o]
+														combo[k]=onpieces[c][k][n]
+														combo[m]=onpieces[c][m][p]
+														cscore := scoreCombo(combo, desrolls, set)
+														if(cscore > maxscore) {
+															maxscore = cscore;
+															maxcombo = combo;
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+					
+					
+					
+					//5 on
+				
+				
+					for _, b := range 
+				}
+			
+			
+			
+				curdom = getDomain(rollsperdomain, rpdc) //recalculate curdom, which is the domain d where rollsperdomain[d]-rpdc[d] is the highest (when this is 0, set curdom to -999)
 			}
 		}
 		
@@ -310,13 +371,13 @@ NEXT:
 	
 	//once we're here we have all artifacts for ppl who need certain sets, farm more here if theres a char that can use full rainbow (2pc + rainbow should also already be complete.. actually no i think there's cases where it wouldn't be, in that case farm the 2pc domain bc why not)
 	
-	return count,nil;
+	return count,nil
 }
 
 
 func calcScore() {
 	if(main[c][typetonum(a.SlotType)] != a.StatType) {
-		return -1;
+		return -1
 	}
 	
 	score := 0
@@ -326,39 +387,22 @@ func calcScore() {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//func update(bag []Artifact, a Artifact, main [EndSlotType]StatType, desired [EndStatType]float64) ([]Artifact, float64) { as nice as it'd be to have an update function, i dont want to create this line lol
-	//score should just be the total distance from desired stats, the lower it is
-	//the better it is
-	/*var prev, next, total float64 //score should be % of desired
-	var replaced bool
-	//if current slot is empty then just put it in
-	if !bag[a.Slot].Ok {
-		bag[a.Slot] = a
-		replaced = true
+func getDomain(rpd []float64, rpdc []float64) (float64){
+	float64 max=0
+	dom := -999
+	for _, a := range rpd {
+		if rpd[a]-rpdc[a]>max {
+			max = rpd[a]-rpdc[a]
+			dom = a
+		}
 	}
+	return dom
+}
 
-}*/
+func scoreCombo(combo []Artifact, desrolls [4][lib.EndStatType]float64, set [][]int, c int) (float64) {
+	score := 0
+	for _, s := range desrolls[c] {
+		score += min(desrolls[c][s], Standardize(combo[0].Subs[s]+combo[1].Subs[s]+combo[2].Subs[s]+combo[3].Subs[s]+combo[4].Subs[s],s))
+	}
+	return score;
+}

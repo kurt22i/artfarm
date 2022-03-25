@@ -40,15 +40,7 @@ func run() error {
 	var err error
 	var opt config
 	source, err = ioutil.ReadFile("./config.json")
-	//keep := 5; the number of on and off pieces to store for optimizing per slot per char
-	//onpieces := [4][5][keep]Artifact; //first [] is which char, second is what type it is, third is which of the 5 stored artis it is
-	//offpieces := [4][5][keep]Artifact;
-	//onmin := [4][5]int; //first [] is which char, second is is what type. stores the score the arti that is most replacable.
-	//onmap := [4][5]int; //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
-	//offmin := [4][5]int; //first [] is which char, second is is what type. stores the score the arti that is most replacable.
-	//offmap := [4][5]int; //first [] is which char, second is is what type. stores which of the 5 artis in this slot are least good/most replacable
 	
-	//bag := make([]Artifact, EndSlotType)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -163,7 +155,8 @@ func sim(n, w int, main [][lib.EndSlotType]lib.StatType, desired [][lib.EndStatT
 	for i := 0; i < int(w); i++ {
 		m := cloneMain(main)//oh no i probably have to clone set and maxdomain dont i :(
 		d := cloneDesired(desired)
-		go worker(m, d, req, resp, done)
+		s := cloneSet(set)
+		go worker(m, d, s, maxdomain, req, resp, done)
 	}
 
 	go func() {
@@ -221,6 +214,13 @@ func cloneDesired(in [lib.EndStatType]float64) (r [lib.EndStatType]float64) {
 }
 
 func cloneMain(in [lib.EndSlotType]lib.StatType) (r [lib.EndSlotType]lib.StatType) {
+	for i, v := range in {
+		r[i] = v
+	}
+	return
+}
+
+func cloneSet(in [][]int) (r [][]int) {
 	for i, v := range in {
 		r[i] = v
 	}
